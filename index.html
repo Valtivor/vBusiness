@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>vBusiness</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+</head>
+
+
+<body>
+
+    <!-- =====================================================
+         AUTH SCREEN
+         ===================================================== -->
+
+    <section
+        id="authScreen"
+        style="display: flex;"
+        class="auth-screen"
+    >
+
+        <div class="auth-card">
+
+            <div class="auth-logo">
+
+                <div class="logo-mark">
+                    v
+                </div>
+
+                <div>
+                    <h1>vBusiness</h1>
+
+                    <p>
+                        Manage your business smarter
+                    </p>
+                </div>
+
+            </div>
+
+
+            <!-- ================= LOGIN ================= -->
+
+            <form
+                id="loginForm"
+                class="auth-form"
+            >
+
+                <h2>Welcome back</h2>
+
+                <p class="form-description">
+                    Login to your business account.
+                </p>
+
+
+                <label for="loginEmail">
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    required
+                >
+
+
+                <label for="loginPassword">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+
+
+                <p
+                    id="loginError"
+                    class="auth-error"
+                ></p>
+
+
+                <button
+                    type="submit"
+                    id="loginButton"
+                    class="primary-button full-width"
+                >
+                    Login
+                </button>
+
+
+                <p class="auth-switch">
+
+                    Don't have an account?
+
+                    <a
+                        href="#"
+                        id="showSignup"
+                    >
+                        Create one
+                    </a>
+
+                </p>
+
+            </form>
+
+
+            <!-- ================= SIGNUP ================= -->
+
+            <form
+                id="signupForm"
+                class="auth-form"
+                style="display: none;"
+            >
+
+                <h2>Create your account</h2>
+
+                <p class="form-description">
+                    Start managing your business with vBusiness.
+                </p>
+
+
+                <label for="signupName">
+                    Your Name
+                </label>
+
+                <input
+                    type="text"
+                    id="signupName"
+                    placeholder="Your full name"
+                    autocomplete="name"
+                    required
+                >
+
+
+                <label for="signupBusiness">
+                    Business Name
+                </label>
+
+                <input
+                    type="text"
+                    id="signupBusiness"
+                    placeholder="Your business name"
+                    required
+                >
+
+
+                <label for="signupEmail">
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="signupEmail"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    required
+                >
+
+
+                <label for="signupPassword">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="signupPassword"
+                    placeholder="At least 6 characters"
+                    autocomplete="new-password"
+                    minlength="6"
+                    required
+                >
+
+
+                <p
+                    id="signupError"
+                    class="auth-error"
+                ></p>
+
+
+                <button
+                    type="submit"
+                    id="signupButton"
+                    class="primary-button full-width"
+                >
+                    Create Account
+                </button>
+
+
+                <p class="auth-switch">
+
+                    Already have an account?
+
+                    <a
+                        href="#"
+                        id="showLogin"
+                    >
+                        Login
+                    </a>
+
+                </p>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         MAIN APPLICATION
+         IMPORTANT: HIDDEN UNTIL FIREBASE AUTHENTICATES USER
+         ===================================================== -->
+
+    <div
+        id="app"
+        style="display: none;"
+    >
+
+        <!-- ================= SIDEBAR ================= -->
+
+        <aside class="sidebar">
+
+            <div class="sidebar-logo">
+
+                <div class="logo-mark">
+                    v
+                </div>
+
+                <div>
+                    <strong>vBusiness</strong>
+
+                    <small>
+                        Business Manager
+                    </small>
+                </div>
+
+            </div>
+
+
+            <nav class="sidebar-nav">
+
+                <button
+                    class="nav-item active"
+                    data-page="dashboard"
+                >
+                    <span>⌂</span>
+                    Dashboard
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="sales"
+                >
+                    <span>₦</span>
+                    Sales
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="expenses"
+                >
+                    <span>−</span>
+                    Expenses
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="inventory"
+                >
+                    <span>▣</span>
+                    Inventory
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="customers"
+                >
+                    <span>♙</span>
+                    Customers
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="receipts"
+                >
+                    <span>▤</span>
+                    Receipts
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="settings"
+                >
+                    <span>⚙</span>
+                    Settings
+                </button>
+
+            </nav>
+
+
+            <!-- SIDEBAR PROFILE -->
+
+            <div class="sidebar-profile">
+
+                <div class="profile-avatar">
+                    V
+                </div>
+
+                <div class="profile-info">
+
+                    <strong id="profileName">
+                        Business Owner
+                    </strong>
+
+                    <small id="profileEmail">
+                        Account
+                    </small>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- ================= MAIN ================= -->
+
+        <main class="main-content">
+
+
+            <!-- ================= TOPBAR ================= -->
+
+            <header class="topbar">
+
+                <div class="topbar-left">
+
+                    <button
+                        id="menuButton"
+                        class="menu-button"
+                    >
+                        ☰
+                    </button>
+
+
+                    <div>
+
+                        <h1 id="pageTitle">
+                            Dashboard
+                        </h1>
+
+                        <p id="pageSubtitle">
+                            Overview of your business
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    id="profileButton"
+                    class="profile-button"
+                >
+
+                    <span class="profile-avatar">
+                        V
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- =================================================
+                 DASHBOARD
+                 ================================================= -->
+
+            <section
+                id="dashboardPage"
+                class="page active"
+            >
+
+                <div class="welcome-section">
+
+                    <div>
+
+                        <h2>
+                            Welcome to
+                            <span id="businessName">
+                                My Business
+                            </span>
+                        </h2>
+
+                        <p>
+                            Here's what's happening with your business today.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- STAT CARDS -->
+
+                <div class="stats-grid">
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon sales-icon">
+                            ₦
+                        </div>
+
+                        <div>
+
+                            <span>
+                                Today's Sales
+                            </span>
+
+                            <strong id="todaySales">
+                                ₦0.00
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon expense-icon">
+                            −
+                        </div>
+
+                        <div>
+
+                            <span>
+                                Today's Expenses
+                            </span>
+
+                            <strong id="todayExpenses">
+                                ₦0.00
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon profit-icon">
+                            ↑
+                        </div>
+
+                        <div>
+
+                            <span>
+                                Today's Profit
+                            </span>
+
+                            <strong id="todayProfit">
+                                ₦0.00
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon inventory-icon">
+                            ▣
+                        </div>
+
+                        <div>
+
+                            <span>
+                                Products
+                            </span>
+
+                            <strong id="productCount">
+                                0
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- QUICK ACTIONS -->
+
+                <div class="section-header">
+
+                    <div>
+
+                        <h2>
+                            Quick Actions
+                        </h2>
+
+                        <p>
+                            Manage your business quickly.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="quick-actions">
+
+
+                    <button
+                        id="addSaleButton"
+                        class="quick-action"
+                    >
+
+                        <span>
+                            +
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                Add Sale
+                            </strong>
+
+                            <small>
+                                Record a new sale
+                            </small>
+
+                        </div>
+
+                    </button>
+
+
+                    <button
+                        id="addExpenseButton"
+                        class="quick-action"
+                    >
+
+                        <span>
+                            −
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                Add Expense
+                            </strong>
+
+                            <small>
+                                Record an expense
+                            </small>
+
+                        </div>
+
+                    </button>
+
+
+                    <button
+                        id="addProductButton"
+                        class="quick-action"
+                    >
+
+                        <span>
+                            +
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                Add Product
+                            </strong>
+
+                            <small>
+                                Add inventory
+                            </small>
+
+                        </div>
+
+                    </button>
+
+                </div>
+
+
+                <!-- RECENT ACTIVITY -->
+
+                <div class="section-header">
+
+                    <div>
+
+                        <h2>
+                            Recent Activity
+                        </h2>
+
+                        <p>
+                            Your latest business activity.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="recentActivity"
+                    class="activity-list"
+                >
+
+                    <div class="empty-state">
+                        No recent activity.
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 SALES
+                 ================================================= -->
+
+            <section
+                id="salesPage"
+                class="page"
+            >
+
+                <div class="page-actions">
+
+                    <div>
+
+                        <h2>
+                            Sales
+                        </h2>
+
+                        <p>
+                            Track your business sales.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        id="salesAddButton"
+                        class="primary-button"
+                    >
+                        + Add Sale
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="salesList"
+                    class="data-list"
+                >
+
+                    <div class="empty-state">
+                        No sales recorded yet.
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 EXPENSES
+                 ================================================= -->
+
+            <section
+                id="expensesPage"
+                class="page"
+            >
+
+                <div class="page-actions">
+
+                    <div>
+
+                        <h2>
+                            Expenses
+                        </h2>
+
+                        <p>
+                            Track your business expenses.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        id="expensesAddButton"
+                        class="primary-button"
+                    >
+                        + Add Expense
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="expensesList"
+                    class="data-list"
+                >
+
+                    <div class="empty-state">
+                        No expenses recorded yet.
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 INVENTORY
+                 ================================================= -->
+
+            <section
+                id="inventoryPage"
+                class="page"
+            >
+
+                <div class="page-actions">
+
+                    <div>
+
+                        <h2>
+                            Inventory
+                        </h2>
+
+                        <p>
+                            Manage your products and stock.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        id="inventoryAddButton"
+                        class="primary-button"
+                    >
+                        + Add Product
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="productsList"
+                    class="data-list"
+                >
+
+                    <div class="empty-state">
+                        No products in inventory yet.
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 CUSTOMERS
+                 ================================================= -->
+
+            <section
+                id="customersPage"
+                class="page"
+            >
+
+                <div class="page-actions">
+
+                    <div>
+
+                        <h2>
+                            Customers
+                        </h2>
+
+                        <p>
+                            Manage your customers.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        id="customerAddButton"
+                        class="primary-button"
+                    >
+                        + Add Customer
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="customersList"
+                    class="data-list"
+                >
+
+                    <div class="empty-state">
+                        No customers added yet.
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 RECEIPTS
+                 ================================================= -->
+
+            <section
+                id="receiptsPage"
+                class="page"
+            >
+
+                <div class="page-actions">
+
+                    <div>
+
+                        <h2>
+                            Receipts
+                        </h2>
+
+                        <p>
+                            View your business receipts.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="receiptsList"
+                    class="data-list"
+                >
+
+                    <div class="empty-state">
+                        No receipts yet.
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 SETTINGS
+                 ================================================= -->
+
+            <section
+                id="settingsPage"
+                class="page"
+            >
+
+                <div class="page-actions">
+
+                    <div>
+
+                        <h2>
+                            Settings
+                        </h2>
+
+                        <p>
+                            Manage your business settings.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="settings-card">
+
+                    <h3>
+                        Account
+                    </h3>
+
+
+                    <label for="accountEmail">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="accountEmail"
+                        readonly
+                    >
+
+                </div>
+
+
+                <div class="settings-card">
+
+                    <h3>
+                        Business Information
+                    </h3>
+
+
+                    <label for="businessNameInput">
+                        Business Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="businessNameInput"
+                        placeholder="Your business name"
+                    >
+
+
+                    <label for="currencyInput">
+                        Currency
+                    </label>
+
+                    <input
+                        type="text"
+                        id="currencyInput"
+                        placeholder="₦"
+                    >
+
+
+                    <button
+                        id="saveSettingsButton"
+                        class="primary-button"
+                    >
+                        Save Settings
+                    </button>
+
+                </div>
+
+
+                <div class="settings-card danger-card">
+
+                    <h3>
+                        Local Data
+                    </h3>
+
+                    <p>
+                        Clear the locally stored data on this device.
+                        Your cloud data will remain safe.
+                    </p>
+
+
+                    <button
+                        id="clearDataButton"
+                        class="danger-button"
+                    >
+                        Clear Local Data
+                    </button>
+
+                </div>
+
+
+                <div class="settings-card">
+
+                    <h3>
+                        Account
+                    </h3>
+
+
+                    <button
+                        id="logoutButton"
+                        class="secondary-button"
+                    >
+                        Logout
+                    </button>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         MODAL
+         ===================================================== -->
+
+    <div
+        id="modalOverlay"
+        class="modal-overlay"
+    >
+
+        <div class="modal-box">
+
+            <button
+                id="closeModal"
+                class="close-modal"
+            >
+                ×
+            </button>
+
+
+            <div id="modalContent"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         FIREBASE / APP JAVASCRIPT
+         ===================================================== -->
+
+    <script
+        type="module"
+        src="app.js"
+    ></script>
+
+</body>
+
+</html>
