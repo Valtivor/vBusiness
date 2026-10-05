@@ -1,9 +1,11 @@
-// ============================================================
-// vBUSINESS - app.js
-// Firebase + Authentication + Firestore
-// ============================================================
+/* =========================================
+   vBUSINESS
+   FIREBASE + APP LOGIC
+========================================= */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 
 import {
     getAuth,
@@ -22,9 +24,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 
-// ============================================================
-// FIREBASE CONFIG
-// ============================================================
+/* =========================================
+   FIREBASE CONFIG
+========================================= */
 
 const firebaseConfig = {
     apiKey: "AIzaSyDSQBT3iSFZVRIFzJM1bMQktEDzFb8wGGo",
@@ -36,21 +38,19 @@ const firebaseConfig = {
 };
 
 
-// ============================================================
-// INITIALIZE FIREBASE
-// ============================================================
+const firebaseApp = initializeApp(firebaseConfig);
 
-const app = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+const db = getFirestore(firebaseApp);
 
 
-// ============================================================
-// DEFAULT DATA
-// ============================================================
+/* =========================================
+   DEFAULT DATA
+========================================= */
 
 const defaultData = {
+
     business: {
         name: "My Business",
         currency: "₦"
@@ -68,9 +68,9 @@ const defaultData = {
 };
 
 
-// ============================================================
-// LOCAL STORAGE
-// ============================================================
+/* =========================================
+   LOCAL DATA
+========================================= */
 
 const LOCAL_KEY = "vBusinessLocalData";
 
@@ -81,22 +81,47 @@ function loadLocalData() {
 
     try {
 
-        const saved = localStorage.getItem(LOCAL_KEY);
+        const saved =
+            localStorage.getItem(LOCAL_KEY);
 
         if (!saved) {
+
             return structuredClone(defaultData);
+
         }
 
-        const parsed = JSON.parse(saved);
+        const parsed =
+            JSON.parse(saved);
 
         return {
+
             ...structuredClone(defaultData),
-            ...parsed
+
+            ...parsed,
+
+            business: {
+                ...defaultData.business,
+                ...(parsed.business || {})
+            },
+
+            sales: parsed.sales || [],
+
+            expenses: parsed.expenses || [],
+
+            products: parsed.products || [],
+
+            customers: parsed.customers || [],
+
+            receipts: parsed.receipts || []
+
         };
 
     } catch (error) {
 
-        console.error("Could not load local data:", error);
+        console.error(
+            "Could not load local data:",
+            error
+        );
 
         return structuredClone(defaultData);
     }
@@ -112,252 +137,302 @@ function saveLocalData() {
 }
 
 
-// ============================================================
-// FIRESTORE
-// ============================================================
+/* =========================================
+   FIRESTORE
+========================================= */
 
 async function saveCloudData() {
 
-    if (!auth.currentUser) {
-        saveLocalData();
-        return;
-    }
+    const user = auth.currentUser;
+
+    if (!user) return;
 
     try {
 
-        const userRef = doc(
-            db,
-            "users",
-            auth.currentUser.uid
-        );
-
         await setDoc(
-            userRef,
-            {
-                business: businessData.business,
-                sales: businessData.sales,
-                expenses: businessData.expenses,
-                products: businessData.products,
-                customers: businessData.customers,
-                receipts: businessData.receipts,
-                updatedAt: new Date().toISOString()
-            },
+            doc(db, "users", user.uid),
+            businessData,
             {
                 merge: true
             }
         );
 
-        saveLocalData();
-
-        console.log("Cloud data saved.");
-
     } catch (error) {
 
-        console.error("Cloud save failed:", error);
+        console.error(
+            "Cloud save failed:",
+            error
+        );
 
-        saveLocalData();
+        alert(
+            "Your data could not be saved to the cloud."
+        );
     }
 }
 
 
 async function loadCloudData() {
 
-    if (!auth.currentUser) {
-        return;
-    }
+    const user = auth.currentUser;
+
+    if (!user) return;
 
     try {
 
-        const userRef = doc(
-            db,
-            "users",
-            auth.currentUser.uid
-        );
-
-        const snapshot = await getDoc(userRef);
+        const snapshot =
+            await getDoc(
+                doc(db, "users", user.uid)
+            );
 
         if (snapshot.exists()) {
 
-            const cloudData = snapshot.data();
+            const cloudData =
+                snapshot.data();
 
             businessData = {
+
                 ...structuredClone(defaultData),
-                ...cloudData
+
+                ...cloudData,
+
+                business: {
+                    ...defaultData.business,
+                    ...(cloudData.business || {})
+                },
+
+                sales: cloudData.sales || [],
+
+                expenses: cloudData.expenses || [],
+
+                products: cloudData.products || [],
+
+                customers: cloudData.customers || [],
+
+                receipts: cloudData.receipts || []
             };
 
-            businessData.business = {
-                ...defaultData.business,
-                ...(cloudData.business || {})
-            };
-
-            businessData.sales = cloudData.sales || [];
-            businessData.expenses = cloudData.expenses || [];
-            businessData.products = cloudData.products || [];
-            businessData.customers = cloudData.customers || [];
-            businessData.receipts = cloudData.receipts || [];
+            saveLocalData();
 
         } else {
 
             await saveCloudData();
         }
 
-        saveLocalData();
-
-        updateEverything();
-
     } catch (error) {
 
-        console.error("Could not load cloud data:", error);
-
-        businessData = loadLocalData();
-
-        updateEverything();
+        console.error(
+            "Cloud load failed:",
+            error
+        );
     }
 }
 
 
-// ============================================================
-// ELEMENTS
-// ============================================================
+/* =========================================
+   DOM
+========================================= */
 
-const authScreen = document.getElementById("authScreen");
-const appScreen = document.getElementById("app");
+const authScreen =
+    document.getElementById("authScreen");
+
+const appScreen =
+    document.getElementById("app");
+
+const loginForm =
+    document.getElementById("loginForm");
+
+const signupForm =
+    document.getElementById("signupForm");
+
+const showSignup =
+    document.getElementById("showSignup");
+
+const showLogin =
+    document.getElementById("showLogin");
+
+const loginError =
+    document.getElementById("loginError");
+
+const signupError =
+    document.getElementById("signupError");
+
+const sidebar =
+    document.getElementById("sidebar");
+
+const menuButton =
+    document.getElementById("menuButton");
+
+const closeSidebar =
+    document.getElementById("closeSidebar");
+
+const modalOverlay =
+    document.getElementById("modalOverlay");
+
+const modalContent =
+    document.getElementById("modalContent");
+
+const modalTitle =
+    document.getElementById("modalTitle");
+
+const closeModalButton =
+    document.getElementById("closeModal");
 
 
-// LOGIN
-const loginForm = document.getElementById("loginForm");
-const loginEmail = document.getElementById("loginEmail");
-const loginPassword = document.getElementById("loginPassword");
-const loginButton = document.getElementById("loginButton");
-const loginError = document.getElementById("loginError");
+/* =========================================
+   AUTH SCREEN SWITCHING
+========================================= */
 
+showSignup.addEventListener(
+    "click",
+    function () {
 
-// SIGNUP
-const signupForm = document.getElementById("signupForm");
-const signupName = document.getElementById("signupName");
-const signupBusiness = document.getElementById("signupBusiness");
-const signupEmail = document.getElementById("signupEmail");
-const signupPassword = document.getElementById("signupPassword");
-const signupButton = document.getElementById("signupButton");
-const signupError = document.getElementById("signupError");
+        loginForm.classList.add("hidden");
 
+        signupForm.classList.remove("hidden");
 
-// AUTH SWITCH
-const showSignup = document.getElementById("showSignup");
-const showLogin = document.getElementById("showLogin");
-
-
-// NAVIGATION
-const pageTitle = document.getElementById("pageTitle");
-const pageSubtitle = document.getElementById("pageSubtitle");
-
-
-// MOBILE MENU
-const menuButton = document.getElementById("menuButton");
-const sidebar = document.querySelector(".sidebar");
-
-
-// PROFILE
-const profileButton = document.getElementById("profileButton");
-
-
-// MODAL
-const modalOverlay = document.getElementById("modalOverlay");
-const closeModalButton = document.getElementById("closeModal");
-const modalContent = document.getElementById("modalContent");
-
-
-// ============================================================
-// AUTH SCREEN SWITCHING
-// ============================================================
-
-function showLoginForm() {
-
-    if (loginForm) {
-        loginForm.style.display = "block";
-    }
-
-    if (signupForm) {
-        signupForm.style.display = "none";
-    }
-
-    if (loginError) {
         loginError.textContent = "";
-    }
-
-    if (signupError) {
         signupError.textContent = "";
     }
-}
+);
 
 
-function showSignupForm() {
+showLogin.addEventListener(
+    "click",
+    function () {
 
-    if (loginForm) {
-        loginForm.style.display = "none";
-    }
+        signupForm.classList.add("hidden");
 
-    if (signupForm) {
-        signupForm.style.display = "block";
-    }
+        loginForm.classList.remove("hidden");
 
-    if (loginError) {
         loginError.textContent = "";
-    }
-
-    if (signupError) {
         signupError.textContent = "";
     }
-}
+);
 
 
-if (showSignup) {
+/* =========================================
+   SIGN UP
+========================================= */
 
-    showSignup.addEventListener("click", function (event) {
-
-        event.preventDefault();
-
-        showSignupForm();
-    });
-}
-
-
-if (showLogin) {
-
-    showLogin.addEventListener("click", function (event) {
+signupForm.addEventListener(
+    "submit",
+    async function (event) {
 
         event.preventDefault();
 
-        showLoginForm();
-    });
-}
+        signupError.textContent = "";
+
+        const name =
+            document.getElementById("signupName").value.trim();
+
+        const businessName =
+            document
+                .getElementById("signupBusiness")
+                .value
+                .trim();
+
+        const email =
+            document
+                .getElementById("signupEmail")
+                .value
+                .trim();
+
+        const password =
+            document
+                .getElementById("signupPassword")
+                .value;
 
 
-// ============================================================
-// LOGIN
-// ============================================================
+        const button =
+            document.getElementById("signupButton");
 
-if (loginForm) {
+        button.disabled = true;
 
-    loginForm.addEventListener("submit", async function (event) {
+        button.textContent =
+            "Creating account...";
 
-        event.preventDefault();
 
-        loginError.textContent = "";
+        try {
 
-        const email = loginEmail.value.trim();
-        const password = loginPassword.value;
+            const result =
+                await createUserWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
 
-        if (!email || !password) {
 
-            loginError.textContent =
-                "Please enter your email and password.";
+            await updateProfile(
+                result.user,
+                {
+                    displayName: name
+                }
+            );
 
-            return;
+
+            businessData =
+                structuredClone(defaultData);
+
+
+            businessData.business.name =
+                businessName;
+
+
+            saveLocalData();
+
+            await saveCloudData();
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            signupError.textContent =
+                getAuthErrorMessage(error);
+
+        } finally {
+
+            button.disabled = false;
+
+            button.textContent =
+                "Create Account";
         }
+    }
+);
 
-        loginButton.disabled = true;
-        loginButton.textContent = "Logging in...";
+
+/* =========================================
+   LOGIN
+========================================= */
+
+loginForm.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+        loginError.textContent = "";
+
+        const email =
+            document
+                .getElementById("loginEmail")
+                .value
+                .trim();
+
+        const password =
+            document
+                .getElementById("loginPassword")
+                .value;
+
+
+        const button =
+            document.getElementById("loginButton");
+
+        button.disabled = true;
+
+        button.textContent =
+            "Signing in...";
+
 
         try {
 
@@ -376,447 +451,328 @@ if (loginForm) {
 
         } finally {
 
-            loginButton.disabled = false;
-            loginButton.textContent = "Login";
-        }
-    });
-}
+            button.disabled = false;
 
-
-// ============================================================
-// SIGN UP
-// ============================================================
-
-if (signupForm) {
-
-    signupForm.addEventListener("submit", async function (event) {
-
-        event.preventDefault();
-
-        signupError.textContent = "";
-
-        const name = signupName.value.trim();
-        const businessName = signupBusiness.value.trim();
-        const email = signupEmail.value.trim();
-        const password = signupPassword.value;
-
-        if (!name || !businessName || !email || !password) {
-
-            signupError.textContent =
-                "Please fill in all fields.";
-
-            return;
-        }
-
-        if (password.length < 6) {
-
-            signupError.textContent =
-                "Password must be at least 6 characters.";
-
-            return;
-        }
-
-        signupButton.disabled = true;
-        signupButton.textContent = "Creating account...";
-
-        try {
-
-            const userCredential =
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-
-            const user = userCredential.user;
-
-            await updateProfile(user, {
-                displayName: name
-            });
-
-            businessData = structuredClone(defaultData);
-
-            businessData.business.name = businessName;
-
-            await saveCloudData();
-
-            signupForm.reset();
-
-        } catch (error) {
-
-            console.error(error);
-
-            signupError.textContent =
-                getAuthErrorMessage(error);
-
-        } finally {
-
-            signupButton.disabled = false;
-            signupButton.textContent = "Create Account";
-        }
-    });
-}
-
-
-// ============================================================
-// FIREBASE AUTH STATE
-// ============================================================
-
-onAuthStateChanged(auth, async function (user) {
-
-    if (user) {
-
-        console.log("Logged in:", user.email);
-
-        if (authScreen) {
-            authScreen.style.display = "none";
-        }
-
-        if (appScreen) {
-            appScreen.style.display = "block";
-        }
-
-        await loadCloudData();
-
-        updateProfileInformation();
-
-        updateEverything();
-
-    } else {
-
-        console.log("No user logged in.");
-
-        if (authScreen) {
-            authScreen.style.display = "flex";
-        }
-
-        if (appScreen) {
-            appScreen.style.display = "none";
+            button.textContent =
+                "Sign In";
         }
     }
-});
+);
 
 
-// ============================================================
-// AUTH ERROR MESSAGES
-// ============================================================
+/* =========================================
+   AUTH STATE
+========================================= */
+
+onAuthStateChanged(
+    auth,
+    async function (user) {
+
+        if (user) {
+
+            authScreen.style.display =
+                "none";
+
+            appScreen.style.display =
+                "block";
+
+
+            await loadCloudData();
+
+
+            updateProfileInformation();
+
+            updateEverything();
+
+        } else {
+
+            authScreen.style.display =
+                "flex";
+
+            appScreen.style.display =
+                "none";
+        }
+    }
+);
+
+
+/* =========================================
+   AUTH ERROR
+========================================= */
 
 function getAuthErrorMessage(error) {
 
-    switch (error.code) {
+    const code =
+        error.code || "";
 
-        case "auth/email-already-in-use":
-            return "That email is already registered.";
+    if (
+        code.includes(
+            "auth/email-already-in-use"
+        )
+    ) {
 
-        case "auth/invalid-email":
-            return "Please enter a valid email.";
+        return "That email already has an account.";
 
-        case "auth/weak-password":
-            return "Password is too weak.";
-
-        case "auth/user-not-found":
-            return "No account was found with that email.";
-
-        case "auth/wrong-password":
-        case "auth/invalid-credential":
-            return "Incorrect email or password.";
-
-        case "auth/too-many-requests":
-            return "Too many attempts. Please try again later.";
-
-        case "auth/api-key-not-valid":
-            return "Firebase API key is invalid. Check your Firebase configuration.";
-
-        case "auth/network-request-failed":
-            return "Network error. Check your internet connection.";
-
-        default:
-            return error.message || "Something went wrong.";
     }
+
+    if (
+        code.includes(
+            "auth/invalid-email"
+        )
+    ) {
+
+        return "Please enter a valid email address.";
+
+    }
+
+    if (
+        code.includes(
+            "auth/weak-password"
+        )
+    ) {
+
+        return "Password must be at least 6 characters.";
+
+    }
+
+    if (
+        code.includes(
+            "auth/invalid-credential"
+        )
+    ) {
+
+        return "Incorrect email or password.";
+
+    }
+
+    if (
+        code.includes(
+            "auth/user-not-found"
+        )
+    ) {
+
+        return "No account was found with that email.";
+
+    }
+
+    if (
+        code.includes(
+            "auth/wrong-password"
+        )
+    ) {
+
+        return "Incorrect password.";
+
+    }
+
+    return error.message ||
+        "Something went wrong. Please try again.";
 }
 
 
-// ============================================================
-// LOGOUT
-// ============================================================
+/* =========================================
+   NAVIGATION
+========================================= */
 
-async function logout() {
+const navItems =
+    document.querySelectorAll(".nav-item");
 
-    try {
+navItems.forEach(
+    function (item) {
 
-        await signOut(auth);
+        item.addEventListener(
+            "click",
+            function () {
 
-    } catch (error) {
+                const page =
+                    item.dataset.page;
 
-        console.error("Logout failed:", error);
+                showPage(page);
+
+                sidebar.classList.remove(
+                    "open"
+                );
+            }
+        );
     }
-}
-
-
-document.addEventListener("click", function (event) {
-
-    if (event.target.closest("#logoutButton")) {
-
-        logout();
-    }
-});
-
-
-// ============================================================
-// NAVIGATION
-// ============================================================
-
-const pages = document.querySelectorAll(".page");
-const navigationButtons = document.querySelectorAll("[data-page]");
-
-
-const pageInformation = {
-
-    dashboard: {
-        title: "Dashboard",
-        subtitle: "Overview of your business"
-    },
-
-    sales: {
-        title: "Sales",
-        subtitle: "Track money coming into your business"
-    },
-
-    expenses: {
-        title: "Expenses",
-        subtitle: "Track your business expenses"
-    },
-
-    inventory: {
-        title: "Inventory",
-        subtitle: "Manage your products and stock"
-    },
-
-    customers: {
-        title: "Customers",
-        subtitle: "Manage your customers"
-    },
-
-    receipts: {
-        title: "Receipts",
-        subtitle: "View your business receipts"
-    },
-
-    settings: {
-        title: "Settings",
-        subtitle: "Manage your business settings"
-    }
-};
+);
 
 
 function showPage(pageName) {
 
-    pages.forEach(function (page) {
+    document
+        .querySelectorAll(".page")
+        .forEach(
+            function (page) {
 
-        page.classList.remove("active");
-    });
+                page.classList.remove(
+                    "active-page"
+                );
+            }
+        );
+
 
     const selectedPage =
-        document.getElementById(`${pageName}Page`);
+        document.getElementById(
+            pageName + "Page"
+        );
 
     if (selectedPage) {
 
-        selectedPage.classList.add("active");
+        selectedPage.classList.add(
+            "active-page"
+        );
     }
 
-    navigationButtons.forEach(function (button) {
 
-        button.classList.remove("active");
+    navItems.forEach(
+        function (item) {
 
-        if (button.dataset.page === pageName) {
-
-            button.classList.add("active");
+            item.classList.toggle(
+                "active",
+                item.dataset.page === pageName
+            );
         }
-    });
+    );
 
-    if (pageInformation[pageName]) {
 
-        pageTitle.textContent =
-            pageInformation[pageName].title;
+    const titles = {
 
-        pageSubtitle.textContent =
-            pageInformation[pageName].subtitle;
+        dashboard: [
+            "Dashboard",
+            "Overview of your business"
+        ],
+
+        sales: [
+            "Sales",
+            "Track money coming into your business"
+        ],
+
+        expenses: [
+            "Expenses",
+            "Track your business spending"
+        ],
+
+        inventory: [
+            "Inventory",
+            "Manage products and stock levels"
+        ],
+
+        customers: [
+            "Customers",
+            "Manage your customers"
+        ],
+
+        receipts: [
+            "Receipts",
+            "View and print your receipts"
+        ],
+
+        settings: [
+            "Settings",
+            "Manage your account"
+        ]
+    };
+
+
+    const information =
+        titles[pageName] ||
+        titles.dashboard;
+
+
+    document.getElementById(
+        "pageTitle"
+    ).textContent = information[0];
+
+
+    document.getElementById(
+        "pageSubtitle"
+    ).textContent = information[1];
+}
+
+
+/* =========================================
+   MOBILE SIDEBAR
+========================================= */
+
+menuButton.addEventListener(
+    "click",
+    function () {
+
+        sidebar.classList.add("open");
     }
+);
 
-    if (sidebar) {
+
+closeSidebar.addEventListener(
+    "click",
+    function () {
 
         sidebar.classList.remove("open");
     }
-
-    updateEverything();
-}
+);
 
 
-navigationButtons.forEach(function (button) {
+/* =========================================
+   MODAL
+========================================= */
 
-    button.addEventListener("click", function () {
+function openModal(title, content) {
 
-        const pageName = button.dataset.page;
-
-        showPage(pageName);
-    });
-});
-
-
-// ============================================================
-// MOBILE MENU
-// ============================================================
-
-if (menuButton) {
-
-    menuButton.addEventListener("click", function () {
-
-        sidebar.classList.toggle("open");
-    });
-}
-
-
-// ============================================================
-// MODAL
-// ============================================================
-
-function openModal(content) {
+    modalTitle.textContent = title;
 
     modalContent.innerHTML = content;
 
-    modalOverlay.classList.add("show");
+    modalOverlay.classList.remove("hidden");
 }
 
 
 function closeModal() {
 
-    modalOverlay.classList.remove("show");
+    modalOverlay.classList.add("hidden");
 
     modalContent.innerHTML = "";
 }
 
 
-if (closeModalButton) {
-
-    closeModalButton.addEventListener(
-        "click",
-        closeModal
-    );
-}
+closeModalButton.addEventListener(
+    "click",
+    closeModal
+);
 
 
-if (modalOverlay) {
+modalOverlay.addEventListener(
+    "click",
+    function (event) {
 
-    modalOverlay.addEventListener("click", function (event) {
-
-        if (event.target === modalOverlay) {
+        if (
+            event.target === modalOverlay
+        ) {
 
             closeModal();
         }
-    });
-}
-
-
-// ============================================================
-// DASHBOARD
-// ============================================================
-
-function updateDashboard() {
-
-    const today = new Date().toISOString().split("T")[0];
-
-    const todaySales = businessData.sales
-        .filter(sale => sale.date === today)
-        .reduce((total, sale) => {
-
-            return total + Number(sale.amount || 0);
-
-        }, 0);
-
-
-    const todayExpenses = businessData.expenses
-        .filter(expense => expense.date === today)
-        .reduce((total, expense) => {
-
-            return total + Number(expense.amount || 0);
-
-        }, 0);
-
-
-    const todayProfit =
-        todaySales - todayExpenses;
-
-
-    const businessName =
-        document.getElementById("businessName");
-
-    const salesElement =
-        document.getElementById("todaySales");
-
-    const expensesElement =
-        document.getElementById("todayExpenses");
-
-    const profitElement =
-        document.getElementById("todayProfit");
-
-    const productCountElement =
-        document.getElementById("productCount");
-
-
-    if (businessName) {
-
-        businessName.textContent =
-            businessData.business.name;
     }
+);
 
 
-    if (salesElement) {
+/* =========================================
+   MONEY
+========================================= */
 
-        salesElement.textContent =
-            formatMoney(todaySales);
-    }
-
-
-    if (expensesElement) {
-
-        expensesElement.textContent =
-            formatMoney(todayExpenses);
-    }
-
-
-    if (profitElement) {
-
-        profitElement.textContent =
-            formatMoney(todayProfit);
-    }
-
-
-    if (productCountElement) {
-
-        productCountElement.textContent =
-            businessData.products.length;
-    }
-
-
-    renderRecentActivity();
-}
-
-
-// ============================================================
-// MONEY FORMAT
-// ============================================================
-
-function formatMoney(amount) {
+function money(value) {
 
     const currency =
         businessData.business.currency || "₦";
 
+    const number =
+        Number(value) || 0;
+
     return (
         currency +
-        Number(amount || 0).toLocaleString(
+        number.toLocaleString(
             "en-NG",
             {
-                minimumFractionDigits: 2,
+                minimumFractionDigits: 0,
                 maximumFractionDigits: 2
             }
         )
@@ -824,1180 +780,225 @@ function formatMoney(amount) {
 }
 
 
-// ============================================================
-// ADD SALE
-// ============================================================
+/* =========================================
+   DATE
+========================================= */
 
-const salesAddButton =
-    document.getElementById("salesAddButton");
+function getToday() {
 
-const addSaleButton =
-    document.getElementById("addSaleButton");
+    const date =
+        new Date();
 
-
-function showAddSaleModal() {
-
-    const products = businessData.products;
-
-    let productOptions = `
-        <option value="">No product</option>
-    `;
-
-    products.forEach(function (product) {
-
-        productOptions += `
-            <option value="${product.id}">
-                ${escapeHTML(product.name)}
-                — ${formatMoney(product.price)}
-                — Stock: ${product.stock}
-            </option>
-        `;
-    });
+    return date.toISOString()
+        .split("T")[0];
+}
 
 
-    openModal(`
+function formatDate(dateValue) {
 
-        <div class="modal-header">
+    if (!dateValue) return "-";
 
-            <div>
-                <h2>Add Sale</h2>
-                <p>Record a new sale</p>
-            </div>
+    const date =
+        new Date(dateValue);
 
-        </div>
+    if (isNaN(date.getTime())) {
+        return "-";
+    }
 
-        <form id="saleForm">
-
-            <label>Product</label>
-
-            <select id="saleProduct">
-                ${productOptions}
-            </select>
-
-
-            <label>Amount</label>
-
-            <input
-                type="number"
-                id="saleAmount"
-                placeholder="Enter amount"
-                min="0"
-                step="0.01"
-                required
-            >
-
-
-            <label>Customer</label>
-
-            <input
-                type="text"
-                id="saleCustomer"
-                placeholder="Customer name"
-            >
-
-
-            <label>Date</label>
-
-            <input
-                type="date"
-                id="saleDate"
-                value="${new Date().toISOString().split("T")[0]}"
-                required
-            >
-
-
-            <button
-                type="submit"
-                class="primary-button full-width"
-            >
-                Add Sale
-            </button>
-
-        </form>
-    `);
-
-
-    const saleProduct =
-        document.getElementById("saleProduct");
-
-    const saleAmount =
-        document.getElementById("saleAmount");
-
-
-    saleProduct.addEventListener(
-        "change",
-        function () {
-
-            const product =
-                businessData.products.find(
-                    p => p.id === saleProduct.value
-                );
-
-            if (product) {
-
-                saleAmount.value =
-                    product.price;
-            }
+    return date.toLocaleDateString(
+        "en-NG",
+        {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
         }
     );
-
-
-    document
-        .getElementById("saleForm")
-        .addEventListener("submit", async function (event) {
-
-            event.preventDefault();
-
-            const productId =
-                document.getElementById("saleProduct").value;
-
-            const amount =
-                Number(
-                    document.getElementById("saleAmount").value
-                );
-
-            const customer =
-                document
-                    .getElementById("saleCustomer")
-                    .value
-                    .trim();
-
-            const date =
-                document.getElementById("saleDate").value;
-
-
-            if (!amount || amount <= 0) {
-
-                alert("Enter a valid sale amount.");
-
-                return;
-            }
-
-
-            const product =
-                businessData.products.find(
-                    p => p.id === productId
-                );
-
-
-            // INVENTORY DEDUCTION
-            if (product) {
-
-                if (Number(product.stock) <= 0) {
-
-                    alert(
-                        "This product is out of stock."
-                    );
-
-                    return;
-                }
-
-                product.stock =
-                    Number(product.stock) - 1;
-            }
-
-
-            const sale = {
-
-                id: Date.now().toString(),
-
-                productId: productId || null,
-
-                productName:
-                    product
-                        ? product.name
-                        : "General Sale",
-
-                amount: amount,
-
-                customer: customer || "Walk-in Customer",
-
-                date: date,
-
-                createdAt:
-                    new Date().toISOString()
-            };
-
-
-            businessData.sales.unshift(sale);
-
-
-            // CREATE RECEIPT
-            const receipt = {
-
-                id:
-                    "REC-" +
-                    Date.now(),
-
-                saleId:
-                    sale.id,
-
-                productName:
-                    sale.productName,
-
-                amount:
-                    sale.amount,
-
-                customer:
-                    sale.customer,
-
-                date:
-                    sale.date,
-
-                createdAt:
-                    new Date().toISOString()
-            };
-
-
-            businessData.receipts.unshift(receipt);
-
-
-            await saveCloudData();
-
-            updateEverything();
-
-            closeModal();
-
-            alert("Sale added successfully.");
-        });
 }
 
 
-if (salesAddButton) {
+/* =========================================
+   ID
+========================================= */
 
-    salesAddButton.addEventListener(
-        "click",
-        showAddSaleModal
+function createId() {
+
+    return (
+        Date.now().toString(36) +
+        Math.random()
+            .toString(36)
+            .substring(2, 9)
     );
 }
 
 
-if (addSaleButton) {
+/* =========================================
+   SAVE EVERYTHING
+========================================= */
 
-    addSaleButton.addEventListener(
-        "click",
-        showAddSaleModal
-    );
+async function saveEverything() {
+
+    saveLocalData();
+
+    await saveCloudData();
+
+    updateEverything();
 }
 
 
-// ============================================================
-// ADD EXPENSE
-// ============================================================
-
-const expensesAddButton =
-    document.getElementById("expensesAddButton");
-
-const addExpenseButton =
-    document.getElementById("addExpenseButton");
-
-
-function showAddExpenseModal() {
-
-    openModal(`
-
-        <div class="modal-header">
-
-            <div>
-                <h2>Add Expense</h2>
-                <p>Record a business expense</p>
-            </div>
-
-        </div>
-
-
-        <form id="expenseForm">
-
-            <label>Description</label>
-
-            <input
-                type="text"
-                id="expenseDescription"
-                placeholder="e.g. Transport"
-                required
-            >
-
-
-            <label>Amount</label>
-
-            <input
-                type="number"
-                id="expenseAmount"
-                placeholder="Enter amount"
-                min="0"
-                step="0.01"
-                required
-            >
-
-
-            <label>Date</label>
-
-            <input
-                type="date"
-                id="expenseDate"
-                value="${new Date().toISOString().split("T")[0]}"
-                required
-            >
-
-
-            <button
-                type="submit"
-                class="primary-button full-width"
-            >
-                Add Expense
-            </button>
-
-        </form>
-    `);
-
-
-    document
-        .getElementById("expenseForm")
-        .addEventListener("submit", async function (event) {
-
-            event.preventDefault();
-
-
-            const description =
-                document
-                    .getElementById("expenseDescription")
-                    .value
-                    .trim();
-
-
-            const amount =
-                Number(
-                    document
-                        .getElementById("expenseAmount")
-                        .value
-                );
-
-
-            const date =
-                document
-                    .getElementById("expenseDate")
-                    .value;
-
-
-            if (!description || !amount || amount <= 0) {
-
-                alert("Enter valid expense information.");
-
-                return;
-            }
-
-
-            businessData.expenses.unshift({
-
-                id: Date.now().toString(),
-
-                description,
-
-                amount,
-
-                date,
-
-                createdAt:
-                    new Date().toISOString()
-            });
-
-
-            await saveCloudData();
-
-            updateEverything();
-
-            closeModal();
-
-            alert("Expense added successfully.");
-        });
-}
-
-
-if (expensesAddButton) {
-
-    expensesAddButton.addEventListener(
-        "click",
-        showAddExpenseModal
-    );
-}
-
-
-if (addExpenseButton) {
-
-    addExpenseButton.addEventListener(
-        "click",
-        showAddExpenseModal
-    );
-}
-
-
-// ============================================================
-// ADD PRODUCT
-// ============================================================
-
-const inventoryAddButton =
-    document.getElementById("inventoryAddButton");
-
-const addProductButton =
-    document.getElementById("addProductButton");
-
-
-function showAddProductModal() {
-
-    openModal(`
-
-        <div class="modal-header">
-
-            <div>
-                <h2>Add Product</h2>
-                <p>Add an item to your inventory</p>
-            </div>
-
-        </div>
-
-
-        <form id="productForm">
-
-            <label>Product Name</label>
-
-            <input
-                type="text"
-                id="productName"
-                placeholder="e.g. Sneakers"
-                required
-            >
-
-
-            <label>Price</label>
-
-            <input
-                type="number"
-                id="productPrice"
-                placeholder="Selling price"
-                min="0"
-                step="0.01"
-                required
-            >
-
-
-            <label>Stock</label>
-
-            <input
-                type="number"
-                id="productStock"
-                placeholder="Quantity"
-                min="0"
-                step="1"
-                required
-            >
-
-
-            <button
-                type="submit"
-                class="primary-button full-width"
-            >
-                Add Product
-            </button>
-
-        </form>
-    `);
-
-
-    document
-        .getElementById("productForm")
-        .addEventListener("submit", async function (event) {
-
-            event.preventDefault();
-
-
-            const name =
-                document
-                    .getElementById("productName")
-                    .value
-                    .trim();
-
-
-            const price =
-                Number(
-                    document
-                        .getElementById("productPrice")
-                        .value
-                );
-
-
-            const stock =
-                Number(
-                    document
-                        .getElementById("productStock")
-                        .value
-                );
-
-
-            if (!name || price < 0 || stock < 0) {
-
-                alert("Enter valid product information.");
-
-                return;
-            }
-
-
-            businessData.products.push({
-
-                id: Date.now().toString(),
-
-                name,
-
-                price,
-
-                stock,
-
-                createdAt:
-                    new Date().toISOString()
-            });
-
-
-            await saveCloudData();
-
-            updateEverything();
-
-            closeModal();
-
-            alert("Product added successfully.");
-        });
-}
-
-
-if (inventoryAddButton) {
-
-    inventoryAddButton.addEventListener(
-        "click",
-        showAddProductModal
-    );
-}
-
-
-if (addProductButton) {
-
-    addProductButton.addEventListener(
-        "click",
-        showAddProductModal
-    );
-}
-
-
-// ============================================================
-// ADD CUSTOMER
-// ============================================================
-
-const customerAddButton =
-    document.getElementById("customerAddButton");
-
-
-function showAddCustomerModal() {
-
-    openModal(`
-
-        <div class="modal-header">
-
-            <div>
-                <h2>Add Customer</h2>
-                <p>Save a customer</p>
-            </div>
-
-        </div>
-
-
-        <form id="customerForm">
-
-            <label>Customer Name</label>
-
-            <input
-                type="text"
-                id="customerName"
-                placeholder="Full name"
-                required
-            >
-
-
-            <label>Phone</label>
-
-            <input
-                type="tel"
-                id="customerPhone"
-                placeholder="Phone number"
-            >
-
-
-            <label>Email</label>
-
-            <input
-                type="email"
-                id="customerEmail"
-                placeholder="Email address"
-            >
-
-
-            <button
-                type="submit"
-                class="primary-button full-width"
-            >
-                Add Customer
-            </button>
-
-        </form>
-    `);
-
-
-    document
-        .getElementById("customerForm")
-        .addEventListener("submit", async function (event) {
-
-            event.preventDefault();
-
-
-            const name =
-                document
-                    .getElementById("customerName")
-                    .value
-                    .trim();
-
-
-            const phone =
-                document
-                    .getElementById("customerPhone")
-                    .value
-                    .trim();
-
-
-            const email =
-                document
-                    .getElementById("customerEmail")
-                    .value
-                    .trim();
-
-
-            if (!name) {
-
-                alert("Enter the customer's name.");
-
-                return;
-            }
-
-
-            businessData.customers.push({
-
-                id: Date.now().toString(),
-
-                name,
-
-                phone,
-
-                email,
-
-                createdAt:
-                    new Date().toISOString()
-            });
-
-
-            await saveCloudData();
-
-            updateEverything();
-
-            closeModal();
-
-            alert("Customer added successfully.");
-        });
-}
-
-
-if (customerAddButton) {
-
-    customerAddButton.addEventListener(
-        "click",
-        showAddCustomerModal
-    );
-}
-
-
-// ============================================================
-// RENDER SALES
-// ============================================================
-
-function renderSales() {
-
-    const container =
-        document.getElementById("salesList");
-
-    if (!container) return;
-
-
-    if (businessData.sales.length === 0) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-                No sales recorded yet.
-            </div>
-        `;
-
-        return;
-    }
-
-
-    container.innerHTML =
-        businessData.sales.map(function (sale) {
-
-            return `
-
-                <div class="data-row">
-
-                    <div>
-
-                        <strong>
-                            ${escapeHTML(sale.productName)}
-                        </strong>
-
-                        <small>
-                            ${escapeHTML(sale.customer)}
-                        </small>
-
-                    </div>
-
-
-                    <div>
-
-                        <strong>
-                            ${formatMoney(sale.amount)}
-                        </strong>
-
-                        <small>
-                            ${escapeHTML(sale.date)}
-                        </small>
-
-                    </div>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-// ============================================================
-// RENDER EXPENSES
-// ============================================================
-
-function renderExpenses() {
-
-    const container =
-        document.getElementById("expensesList");
-
-    if (!container) return;
-
-
-    if (businessData.expenses.length === 0) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-                No expenses recorded yet.
-            </div>
-        `;
-
-        return;
-    }
-
-
-    container.innerHTML =
-        businessData.expenses.map(function (expense) {
-
-            return `
-
-                <div class="data-row">
-
-                    <div>
-
-                        <strong>
-                            ${escapeHTML(expense.description)}
-                        </strong>
-
-                        <small>
-                            ${escapeHTML(expense.date)}
-                        </small>
-
-                    </div>
-
-
-                    <strong>
-                        ${formatMoney(expense.amount)}
-                    </strong>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-// ============================================================
-// RENDER INVENTORY
-// ============================================================
-
-function renderInventory() {
-
-    const container =
-        document.getElementById("productsList");
-
-    if (!container) return;
-
-
-    if (businessData.products.length === 0) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-                No products in inventory yet.
-            </div>
-        `;
-
-        return;
-    }
-
-
-    container.innerHTML =
-        businessData.products.map(function (product) {
-
-            let stockClass = "";
-
-            if (Number(product.stock) === 0) {
-
-                stockClass = "stock-out";
-
-            } else if (Number(product.stock) <= 5) {
-
-                stockClass = "stock-low";
-            }
-
-
-            return `
-
-                <div class="data-row">
-
-                    <div>
-
-                        <strong>
-                            ${escapeHTML(product.name)}
-                        </strong>
-
-                        <small>
-                            ${formatMoney(product.price)}
-                        </small>
-
-                    </div>
-
-
-                    <div class="${stockClass}">
-
-                        <strong>
-                            ${product.stock}
-                        </strong>
-
-                        <small>
-                            ${product.stock === 1
-                                ? "item"
-                                : "items"}
-                        </small>
-
-                    </div>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-// ============================================================
-// RENDER CUSTOMERS
-// ============================================================
-
-function renderCustomers() {
-
-    const container =
-        document.getElementById("customersList");
-
-    if (!container) return;
-
-
-    if (businessData.customers.length === 0) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-                No customers added yet.
-            </div>
-        `;
-
-        return;
-    }
-
-
-    container.innerHTML =
-        businessData.customers.map(function (customer) {
-
-            return `
-
-                <div class="data-row">
-
-                    <div>
-
-                        <strong>
-                            ${escapeHTML(customer.name)}
-                        </strong>
-
-                        <small>
-                            ${escapeHTML(customer.phone || "No phone")}
-                        </small>
-
-                    </div>
-
-
-                    <small>
-                        ${escapeHTML(customer.email || "No email")}
-                    </small>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-// ============================================================
-// RENDER RECEIPTS
-// ============================================================
-
-function renderReceipts() {
-
-    const container =
-        document.getElementById("receiptsList");
-
-    if (!container) return;
-
-
-    if (businessData.receipts.length === 0) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-                No receipts yet.
-            </div>
-        `;
-
-        return;
-    }
-
-
-    container.innerHTML =
-        businessData.receipts.map(function (receipt) {
-
-            return `
-
-                <div class="data-row">
-
-                    <div>
-
-                        <strong>
-                            ${escapeHTML(receipt.id)}
-                        </strong>
-
-                        <small>
-                            ${escapeHTML(receipt.customer)}
-                        </small>
-
-                    </div>
-
-
-                    <div>
-
-                        <strong>
-                            ${formatMoney(receipt.amount)}
-                        </strong>
-
-                        <button
-                            class="small-button"
-                            data-receipt-id="${receipt.id}"
-                        >
-                            View
-                        </button>
-
-                    </div>
-
-                </div>
-            `;
-
-        }).join("");
-
-
-    container
-        .querySelectorAll("[data-receipt-id]")
-        .forEach(function (button) {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const receipt =
-                        businessData.receipts.find(
-                            r =>
-                                r.id ===
-                                button.dataset.receiptId
-                        );
-
-                    if (receipt) {
-
-                        showReceipt(receipt);
-                    }
-                }
+/* =========================================
+   DASHBOARD
+========================================= */
+
+function updateDashboard() {
+
+    const today =
+        getToday();
+
+
+    const todaySales =
+        businessData.sales
+            .filter(
+                sale =>
+                    sale.date &&
+                    sale.date.startsWith(today)
+            )
+            .reduce(
+                (total, sale) =>
+                    total +
+                    Number(sale.total || 0),
+                0
             );
-        });
+
+
+    const todayExpenses =
+        businessData.expenses
+            .filter(
+                expense =>
+                    expense.date &&
+                    expense.date.startsWith(today)
+            )
+            .reduce(
+                (total, expense) =>
+                    total +
+                    Number(expense.amount || 0),
+                0
+            );
+
+
+    const todayProfit =
+        todaySales -
+        todayExpenses;
+
+
+    document.getElementById(
+        "todaySales"
+    ).textContent = money(todaySales);
+
+
+    document.getElementById(
+        "todayExpenses"
+    ).textContent = money(todayExpenses);
+
+
+    document.getElementById(
+        "todayProfit"
+    ).textContent = money(todayProfit);
+
+
+    document.getElementById(
+        "productCount"
+    ).textContent =
+        businessData.products.length;
+
+
+    document.getElementById(
+        "businessName"
+    ).textContent =
+        businessData.business.name;
+
+
+    renderRecentActivity();
 }
 
 
-// ============================================================
-// VIEW RECEIPT
-// ============================================================
-
-function showReceipt(receipt) {
-
-    openModal(`
-
-        <div
-            id="printReceipt"
-            class="receipt"
-        >
-
-            <div class="receipt-header">
-
-                <h2>
-                    ${escapeHTML(
-                        businessData.business.name
-                    )}
-                </h2>
-
-                <p>
-                    Receipt
-                </p>
-
-            </div>
-
-
-            <div class="receipt-details">
-
-                <p>
-                    <strong>Receipt:</strong>
-                    ${escapeHTML(receipt.id)}
-                </p>
-
-                <p>
-                    <strong>Date:</strong>
-                    ${escapeHTML(receipt.date)}
-                </p>
-
-                <p>
-                    <strong>Customer:</strong>
-                    ${escapeHTML(receipt.customer)}
-                </p>
-
-            </div>
-
-
-            <div class="receipt-total">
-
-                <span>Total</span>
-
-                <strong>
-                    ${formatMoney(receipt.amount)}
-                </strong>
-
-            </div>
-
-
-            <button
-                class="primary-button full-width"
-                onclick="window.print()"
-            >
-                Print Receipt
-            </button>
-
-        </div>
-    `);
-}
-
-
-// ============================================================
-// RECENT ACTIVITY
-// ============================================================
+/* =========================================
+   RECENT ACTIVITY
+========================================= */
 
 function renderRecentActivity() {
 
     const container =
-        document.getElementById("recentActivity");
+        document.getElementById(
+            "recentActivity"
+        );
 
-    if (!container) return;
+
+    const activities = [];
 
 
-    const sales =
-        businessData.sales.slice(0, 5).map(function (sale) {
+    businessData.sales.forEach(
+        sale => {
 
-            return {
+            activities.push({
 
                 type: "sale",
 
-                title:
-                    "Sale: " +
-                    sale.productName,
+                title: "Sale recorded",
+
+                detail:
+                    sale.productName ||
+                    "Business sale",
 
                 amount:
-                    sale.amount,
+                    Number(sale.total || 0),
 
                 date:
                     sale.date
-            };
-        });
+            });
+        }
+    );
 
 
-    const expenses =
-        businessData.expenses.slice(0, 5).map(function (expense) {
+    businessData.expenses.forEach(
+        expense => {
 
-            return {
+            activities.push({
 
                 type: "expense",
 
-                title:
-                    "Expense: " +
-                    expense.description,
+                title: "Expense recorded",
+
+                detail:
+                    expense.description ||
+                    "Business expense",
 
                 amount:
-                    expense.amount,
+                    Number(expense.amount || 0),
 
                 date:
                     expense.date
-            };
-        });
+            });
+        }
+    );
 
 
-    const activities =
-        [...sales, ...expenses]
-            .sort(function (a, b) {
-
-                return new Date(b.date) -
-                    new Date(a.date);
-
-            })
-            .slice(0, 5);
+    activities.sort(
+        (a, b) =>
+            new Date(b.date) -
+            new Date(a.date)
+    );
 
 
-    if (activities.length === 0) {
+    const recent =
+        activities.slice(0, 7);
+
+
+    if (!recent.length) {
 
         container.innerHTML = `
             <div class="empty-state">
-                No recent activity.
+                <div class="empty-state-icon">◌</div>
+                <p>No activity yet.</p>
             </div>
         `;
 
@@ -2006,260 +1007,2439 @@ function renderRecentActivity() {
 
 
     container.innerHTML =
-        activities.map(function (activity) {
+        recent.map(
+            activity => {
 
-            return `
+                const isSale =
+                    activity.type === "sale";
 
-                <div class="activity-item">
 
-                    <div>
+                return `
+                    <div class="activity-item">
 
-                        <strong>
-                            ${escapeHTML(activity.title)}
-                        </strong>
+                        <div class="activity-left">
 
-                        <small>
-                            ${escapeHTML(activity.date)}
-                        </small>
+                            <div class="activity-icon">
+                                ${isSale ? "↗" : "↘"}
+                            </div>
+
+                            <div>
+                                <strong>
+                                    ${escapeHtml(activity.title)}
+                                </strong>
+
+                                <span>
+                                    ${escapeHtml(activity.detail)}
+                                    ·
+                                    ${formatDate(activity.date)}
+                                </span>
+                            </div>
+
+                        </div>
+
+                        <div class="activity-amount">
+                            ${isSale ? "+" : "-"}
+                            ${money(activity.amount)}
+                        </div>
+
+                    </div>
+                `;
+            }
+        )
+        .join("");
+}
+
+
+/* =========================================
+   INVENTORY
+========================================= */
+
+function updateInventory() {
+
+    const products =
+        businessData.products;
+
+
+    const totalProducts =
+        products.length;
+
+
+    const totalStock =
+        products.reduce(
+            (total, product) =>
+                total +
+                Number(product.stock || 0),
+            0
+        );
+
+
+    const lowStockProducts =
+        products.filter(
+            product =>
+                Number(product.stock || 0) <=
+                Number(product.lowStock || 5)
+        );
+
+
+    const stockValue =
+        products.reduce(
+            (total, product) =>
+                total +
+                (
+                    Number(product.costPrice || 0) *
+                    Number(product.stock || 0)
+                ),
+            0
+        );
+
+
+    document.getElementById(
+        "inventoryTotalProducts"
+    ).textContent = totalProducts;
+
+
+    document.getElementById(
+        "inventoryTotalStock"
+    ).textContent = totalStock;
+
+
+    document.getElementById(
+        "inventoryLowStock"
+    ).textContent =
+        lowStockProducts.length;
+
+
+    document.getElementById(
+        "inventoryStockValue"
+    ).textContent =
+        money(stockValue);
+
+
+    updateCategoryFilter();
+
+    updateLowStockAlert();
+
+    renderProducts();
+}
+
+
+/* =========================================
+   CATEGORY FILTER
+========================================= */
+
+function updateCategoryFilter() {
+
+    const select =
+        document.getElementById(
+            "inventoryCategoryFilter"
+        );
+
+
+    const currentValue =
+        select.value;
+
+
+    const categories =
+        [
+            ...new Set(
+                businessData.products
+                    .map(
+                        product =>
+                            product.category
+                    )
+                    .filter(Boolean)
+            )
+        ]
+        .sort();
+
+
+    select.innerHTML =
+        `<option value="all">
+            All Categories
+        </option>`;
+
+
+    categories.forEach(
+        category => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                category;
+
+            option.textContent =
+                category;
+
+            select.appendChild(option);
+        }
+    );
+
+
+    if (
+        categories.includes(
+            currentValue
+        )
+    ) {
+
+        select.value =
+            currentValue;
+
+    } else {
+
+        select.value =
+            "all";
+    }
+}
+
+
+/* =========================================
+   SEARCH
+========================================= */
+
+const inventorySearch =
+    document.getElementById(
+        "inventorySearch"
+    );
+
+
+const inventoryCategoryFilter =
+    document.getElementById(
+        "inventoryCategoryFilter"
+    );
+
+
+inventorySearch.addEventListener(
+    "input",
+    renderProducts
+);
+
+
+inventoryCategoryFilter.addEventListener(
+    "change",
+    renderProducts
+);
+
+
+/* =========================================
+   LOW STOCK ALERT
+========================================= */
+
+function updateLowStockAlert() {
+
+    const alert =
+        document.getElementById(
+            "lowStockAlert"
+        );
+
+    const text =
+        document.getElementById(
+            "lowStockAlertText"
+        );
+
+
+    const lowProducts =
+        businessData.products.filter(
+            product =>
+                Number(product.stock || 0) <=
+                Number(product.lowStock || 5)
+        );
+
+
+    if (!lowProducts.length) {
+
+        alert.classList.add(
+            "hidden"
+        );
+
+        return;
+    }
+
+
+    alert.classList.remove(
+        "hidden"
+    );
+
+
+    const names =
+        lowProducts
+            .slice(0, 3)
+            .map(
+                product =>
+                    product.name
+            )
+            .join(", ");
+
+
+    if (lowProducts.length > 3) {
+
+        text.textContent =
+            `${names} and ${
+                lowProducts.length - 3
+            } more product(s) are low on stock.`;
+
+    } else {
+
+        text.textContent =
+            `${names} ${
+                lowProducts.length === 1
+                    ? "is"
+                    : "are"
+            } running low.`;
+    }
+}
+
+
+/* =========================================
+   RENDER PRODUCTS
+========================================= */
+
+function renderProducts() {
+
+    const container =
+        document.getElementById(
+            "productsList"
+        );
+
+
+    const search =
+        inventorySearch.value
+            .trim()
+            .toLowerCase();
+
+
+    const category =
+        inventoryCategoryFilter.value;
+
+
+    const filtered =
+        businessData.products.filter(
+            product => {
+
+                const matchesSearch =
+                    !search ||
+                    product.name
+                        .toLowerCase()
+                        .includes(search) ||
+                    (
+                        product.category || ""
+                    )
+                    .toLowerCase()
+                    .includes(search);
+
+
+                const matchesCategory =
+                    category === "all" ||
+                    product.category === category;
+
+
+                return (
+                    matchesSearch &&
+                    matchesCategory
+                );
+            }
+        );
+
+
+    if (!filtered.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">▣</div>
+                <p>No products found.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        filtered.map(
+            product => {
+
+                const stock =
+                    Number(product.stock || 0);
+
+                const lowStock =
+                    Number(
+                        product.lowStock || 5
+                    );
+
+                const isLow =
+                    stock <= lowStock;
+
+                const isOut =
+                    stock <= 0;
+
+                const profit =
+                    Number(product.sellPrice || 0) -
+                    Number(product.costPrice || 0);
+
+
+                return `
+                    <div class="product-card ${
+                        isLow
+                            ? "low-stock"
+                            : ""
+                    }">
+
+                        <div class="product-top">
+
+                            <div class="product-icon">
+                                ▣
+                            </div>
+
+                            <div class="product-actions">
+
+                                <button
+                                    class="icon-button"
+                                    onclick="editProduct('${product.id}')"
+                                    title="Edit product"
+                                >
+                                    ✎
+                                </button>
+
+                                <button
+                                    class="icon-button delete"
+                                    onclick="deleteProduct('${product.id}')"
+                                    title="Delete product"
+                                >
+                                    ×
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <h3>
+                            ${escapeHtml(product.name)}
+                        </h3>
+
+                        <div class="product-category">
+                            ${escapeHtml(
+                                product.category ||
+                                "Uncategorized"
+                            )}
+                        </div>
+
+
+                        <div class="product-prices">
+
+                            <div class="price-box">
+
+                                <span>
+                                    Selling Price
+                                </span>
+
+                                <strong>
+                                    ${money(product.sellPrice)}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="price-box">
+
+                                <span>
+                                    Cost Price
+                                </span>
+
+                                <strong>
+                                    ${money(product.costPrice)}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="product-stock">
+
+                            <span class="stock-label">
+                                Stock
+                            </span>
+
+                            <span class="
+                                stock-number
+                                ${isOut ? "out" : ""}
+                                ${isLow && !isOut ? "low" : ""}
+                            ">
+                                ${
+                                    isOut
+                                        ? "Out of stock"
+                                        : stock + " units"
+                                }
+                            </span>
+
+                        </div>
+
+
+                        <div class="profit-label">
+                            Profit per unit:
+                            ${money(profit)}
+                        </div>
+
+                    </div>
+                `;
+            }
+        )
+        .join("");
+}
+
+
+/* =========================================
+   ADD PRODUCT BUTTONS
+========================================= */
+
+document.getElementById(
+    "addProductButton"
+).addEventListener(
+    "click",
+    openAddProductModal
+);
+
+
+document.getElementById(
+    "inventoryAddButton"
+).addEventListener(
+    "click",
+    openAddProductModal
+);
+
+
+/* =========================================
+   ADD PRODUCT MODAL
+========================================= */
+
+function openAddProductModal() {
+
+    openModal(
+        "Add Product",
+        `
+            <form id="productForm" class="modal-form">
+
+                <label>
+                    Product Name
+
+                    <input
+                        type="text"
+                        id="productName"
+                        placeholder="e.g. Coca-Cola"
+                        required
+                    >
+                </label>
+
+
+                <label>
+                    Category
+
+                    <input
+                        type="text"
+                        id="productCategory"
+                        placeholder="e.g. Drinks"
+                    >
+                </label>
+
+
+                <div class="form-grid">
+
+                    <label>
+                        Cost Price
+
+                        <input
+                            type="number"
+                            id="productCostPrice"
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Selling Price
+
+                        <input
+                            type="number"
+                            id="productSellPrice"
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                            required
+                        >
+                    </label>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <label>
+                        Stock Quantity
+
+                        <input
+                            type="number"
+                            id="productStock"
+                            placeholder="0"
+                            min="0"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Low Stock Level
+
+                        <input
+                            type="number"
+                            id="productLowStock"
+                            value="5"
+                            min="0"
+                            required
+                        >
+                    </label>
+
+                </div>
+
+
+                <div class="modal-actions">
+
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        onclick="closeModal()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                    >
+                        Add Product
+                    </button>
+
+                </div>
+
+            </form>
+        `
+    );
+
+
+    document.getElementById(
+        "productForm"
+    ).addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+            const product = {
+
+                id: createId(),
+
+                name:
+                    document
+                        .getElementById("productName")
+                        .value
+                        .trim(),
+
+                category:
+                    document
+                        .getElementById("productCategory")
+                        .value
+                        .trim() ||
+                    "Uncategorized",
+
+                costPrice:
+                    Number(
+                        document
+                            .getElementById(
+                                "productCostPrice"
+                            )
+                            .value
+                    ),
+
+                sellPrice:
+                    Number(
+                        document
+                            .getElementById(
+                                "productSellPrice"
+                            )
+                            .value
+                    ),
+
+                stock:
+                    Number(
+                        document
+                            .getElementById(
+                                "productStock"
+                            )
+                            .value
+                    ),
+
+                lowStock:
+                    Number(
+                        document
+                            .getElementById(
+                                "productLowStock"
+                            )
+                            .value
+                    ),
+
+                createdAt:
+                    new Date().toISOString()
+            };
+
+
+            businessData.products.push(
+                product
+            );
+
+
+            closeModal();
+
+            await saveEverything();
+        }
+    );
+}
+
+
+/* =========================================
+   EDIT PRODUCT
+========================================= */
+
+window.editProduct =
+    function (productId) {
+
+        const product =
+            businessData.products.find(
+                item =>
+                    item.id === productId
+            );
+
+
+        if (!product) return;
+
+
+        openModal(
+            "Edit Product",
+            `
+                <form id="editProductForm" class="modal-form">
+
+                    <label>
+                        Product Name
+
+                        <input
+                            type="text"
+                            id="editProductName"
+                            value="${escapeAttribute(product.name)}"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Category
+
+                        <input
+                            type="text"
+                            id="editProductCategory"
+                            value="${escapeAttribute(product.category || "")}"
+                        >
+                    </label>
+
+
+                    <div class="form-grid">
+
+                        <label>
+                            Cost Price
+
+                            <input
+                                type="number"
+                                id="editProductCost"
+                                value="${Number(product.costPrice || 0)}"
+                                min="0"
+                                step="0.01"
+                                required
+                            >
+                        </label>
+
+
+                        <label>
+                            Selling Price
+
+                            <input
+                                type="number"
+                                id="editProductSell"
+                                value="${Number(product.sellPrice || 0)}"
+                                min="0"
+                                step="0.01"
+                                required
+                            >
+                        </label>
 
                     </div>
 
 
-                    <strong>
-                        ${formatMoney(activity.amount)}
-                    </strong>
+                    <div class="form-grid">
+
+                        <label>
+                            Stock Quantity
+
+                            <input
+                                type="number"
+                                id="editProductStock"
+                                value="${Number(product.stock || 0)}"
+                                min="0"
+                                required
+                            >
+                        </label>
+
+
+                        <label>
+                            Low Stock Level
+
+                            <input
+                                type="number"
+                                id="editProductLow"
+                                value="${Number(product.lowStock || 5)}"
+                                min="0"
+                                required
+                            >
+                        </label>
+
+                    </div>
+
+
+                    <div class="modal-actions">
+
+                        <button
+                            type="button"
+                            class="secondary-button"
+                            onclick="closeModal()"
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            class="primary-button"
+                        >
+                            Save Changes
+                        </button>
+
+                    </div>
+
+                </form>
+            `
+        );
+
+
+        document.getElementById(
+            "editProductForm"
+        ).addEventListener(
+            "submit",
+            async function (event) {
+
+                event.preventDefault();
+
+
+                product.name =
+                    document
+                        .getElementById(
+                            "editProductName"
+                        )
+                        .value
+                        .trim();
+
+
+                product.category =
+                    document
+                        .getElementById(
+                            "editProductCategory"
+                        )
+                        .value
+                        .trim() ||
+                    "Uncategorized";
+
+
+                product.costPrice =
+                    Number(
+                        document
+                            .getElementById(
+                                "editProductCost"
+                            )
+                            .value
+                    );
+
+
+                product.sellPrice =
+                    Number(
+                        document
+                            .getElementById(
+                                "editProductSell"
+                            )
+                            .value
+                    );
+
+
+                product.stock =
+                    Number(
+                        document
+                            .getElementById(
+                                "editProductStock"
+                            )
+                            .value
+                    );
+
+
+                product.lowStock =
+                    Number(
+                        document
+                            .getElementById(
+                                "editProductLow"
+                            )
+                            .value
+                    );
+
+
+                closeModal();
+
+                await saveEverything();
+            }
+        );
+    };
+
+
+/* =========================================
+   DELETE PRODUCT
+========================================= */
+
+window.deleteProduct =
+    async function (productId) {
+
+        const product =
+            businessData.products.find(
+                item =>
+                    item.id === productId
+            );
+
+
+        if (!product) return;
+
+
+        const confirmed =
+            confirm(
+                `Delete "${product.name}" from inventory?`
+            );
+
+
+        if (!confirmed) return;
+
+
+        businessData.products =
+            businessData.products.filter(
+                item =>
+                    item.id !== productId
+            );
+
+
+        await saveEverything();
+    };
+
+
+/* =========================================
+   SALES
+========================================= */
+
+document.getElementById(
+    "addSaleButton"
+).addEventListener(
+    "click",
+    openAddSaleModal
+);
+
+
+document.getElementById(
+    "salesAddButton"
+).addEventListener(
+    "click",
+    openAddSaleModal
+);
+
+
+function openAddSaleModal() {
+
+    if (!businessData.products.length) {
+
+        alert(
+            "Add a product to your inventory first."
+        );
+
+        showPage("inventory");
+
+        return;
+    }
+
+
+    const productOptions =
+        businessData.products
+            .map(
+                product =>
+                    `
+                    <option
+                        value="${product.id}"
+                    >
+                        ${escapeHtml(product.name)}
+                        — Stock: ${product.stock}
+                    </option>
+                    `
+            )
+            .join("");
+
+
+    openModal(
+        "Add Sale",
+        `
+            <form id="saleForm" class="modal-form">
+
+                <label>
+                    Product
+
+                    <select
+                        id="saleProduct"
+                        required
+                    >
+
+                        <option value="">
+                            Select product
+                        </option>
+
+                        ${productOptions}
+
+                    </select>
+
+                </label>
+
+
+                <div class="form-grid">
+
+                    <label>
+                        Quantity
+
+                        <input
+                            type="number"
+                            id="saleQuantity"
+                            value="1"
+                            min="1"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Customer
+
+                        <input
+                            type="text"
+                            id="saleCustomer"
+                            placeholder="Optional"
+                        >
+                    </label>
 
                 </div>
-            `;
-
-        }).join("");
-}
 
 
-// ============================================================
-// SETTINGS
-// ============================================================
+                <label>
+                    Payment Method
 
-const saveSettingsButton =
-    document.getElementById("saveSettingsButton");
+                    <select id="salePayment">
 
-const clearDataButton =
-    document.getElementById("clearDataButton");
+                        <option value="Cash">
+                            Cash
+                        </option>
+
+                        <option value="Transfer">
+                            Transfer
+                        </option>
+
+                        <option value="Card">
+                            Card
+                        </option>
+
+                    </select>
+
+                </label>
 
 
-function updateSettings() {
-
-    const accountEmail =
-        document.getElementById("accountEmail");
-
-    const businessNameInput =
-        document.getElementById("businessNameInput");
-
-    const currencyInput =
-        document.getElementById("currencyInput");
+                <div
+                    id="salePreview"
+                    class="price-box"
+                >
+                    Select a product.
+                </div>
 
 
-    if (accountEmail && auth.currentUser) {
+                <div class="modal-actions">
 
-        accountEmail.value =
-            auth.currentUser.email || "";
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        onclick="closeModal()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                    >
+                        Record Sale
+                    </button>
+
+                </div>
+
+            </form>
+        `
+    );
+
+
+    const productSelect =
+        document.getElementById(
+            "saleProduct"
+        );
+
+    const quantityInput =
+        document.getElementById(
+            "saleQuantity"
+        );
+
+    const preview =
+        document.getElementById(
+            "salePreview"
+        );
+
+
+    function updateSalePreview() {
+
+        const product =
+            businessData.products.find(
+                item =>
+                    item.id ===
+                    productSelect.value
+            );
+
+
+        if (!product) {
+
+            preview.textContent =
+                "Select a product.";
+
+            return;
+        }
+
+
+        const quantity =
+            Number(
+                quantityInput.value
+            ) || 0;
+
+
+        const total =
+            quantity *
+            Number(product.sellPrice || 0);
+
+
+        preview.innerHTML = `
+            <span>Total</span>
+            <strong>
+                ${money(total)}
+            </strong>
+        `;
     }
 
 
-    if (businessNameInput) {
-
-        businessNameInput.value =
-            businessData.business.name;
-    }
-
-
-    if (currencyInput) {
-
-        currencyInput.value =
-            businessData.business.currency;
-    }
-}
+    productSelect.addEventListener(
+        "change",
+        updateSalePreview
+    );
 
 
-if (saveSettingsButton) {
+    quantityInput.addEventListener(
+        "input",
+        updateSalePreview
+    );
 
-    saveSettingsButton.addEventListener(
-        "click",
-        async function () {
 
-            const businessNameInput =
-                document.getElementById(
-                    "businessNameInput"
+    document.getElementById(
+        "saleForm"
+    ).addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+
+            const product =
+                businessData.products.find(
+                    item =>
+                        item.id ===
+                        productSelect.value
                 );
 
-            const currencyInput =
-                document.getElementById(
-                    "currencyInput"
-                );
 
-
-            const businessName =
-                businessNameInput.value.trim();
-
-
-            const currency =
-                currencyInput.value.trim();
-
-
-            if (!businessName) {
+            if (!product) {
 
                 alert(
-                    "Please enter your business name."
+                    "Please select a product."
                 );
 
                 return;
             }
 
 
-            businessData.business.name =
-                businessName;
-
-
-            businessData.business.currency =
-                currency || "₦";
-
-
-            await saveCloudData();
-
-            updateEverything();
-
-            alert("Settings saved.");
-        }
-    );
-}
-
-
-// ============================================================
-// CLEAR LOCAL DATA
-// ============================================================
-
-if (clearDataButton) {
-
-    clearDataButton.addEventListener(
-        "click",
-        function () {
-
-            const confirmed =
-                confirm(
-                    "Clear the locally saved data on this device?"
+            const quantity =
+                Number(
+                    quantityInput.value
                 );
 
 
-            if (!confirmed) return;
+            if (quantity <= 0) {
+
+                alert(
+                    "Quantity must be greater than zero."
+                );
+
+                return;
+            }
 
 
-            localStorage.removeItem(
-                LOCAL_KEY
+            if (
+                quantity >
+                Number(product.stock)
+            ) {
+
+                alert(
+                    `Only ${product.stock} unit(s) of ${product.name} are available.`
+                );
+
+                return;
+            }
+
+
+            const total =
+                quantity *
+                Number(product.sellPrice || 0);
+
+
+            const sale = {
+
+                id: createId(),
+
+                productId:
+                    product.id,
+
+                productName:
+                    product.name,
+
+                quantity:
+
+                    quantity,
+
+                unitPrice:
+                    Number(
+                        product.sellPrice
+                    ),
+
+                total:
+
+                    total,
+
+                customer:
+                    document
+                        .getElementById(
+                            "saleCustomer"
+                        )
+                        .value
+                        .trim(),
+
+                paymentMethod:
+                    document
+                        .getElementById(
+                            "salePayment"
+                        )
+                        .value,
+
+                date:
+                    new Date().toISOString()
+            };
+
+
+            product.stock -= quantity;
+
+
+            businessData.sales.push(
+                sale
             );
 
+
+            businessData.receipts.push({
+
+                id:
+                    createId(),
+
+                saleId:
+                    sale.id,
+
+                date:
+                    sale.date,
+
+                productName:
+                    sale.productName,
+
+                quantity:
+                    sale.quantity,
+
+                total:
+                    sale.total,
+
+                customer:
+                    sale.customer,
+
+                paymentMethod:
+                    sale.paymentMethod
+            });
+
+
+            closeModal();
+
+            await saveEverything();
+
+            showPage("sales");
+        }
+    );
+}
+
+
+/* =========================================
+   SALES LIST
+========================================= */
+
+function renderSales() {
+
+    const container =
+        document.getElementById(
+            "salesList"
+        );
+
+
+    const sales =
+        [...businessData.sales]
+            .sort(
+                (a, b) =>
+                    new Date(b.date) -
+                    new Date(a.date)
+            );
+
+
+    if (!sales.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">↗</div>
+                <p>No sales recorded yet.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        sales.map(
+            sale => {
+
+                return `
+                    <div class="data-row">
+
+                        <div class="data-main">
+
+                            <strong>
+                                ${escapeHtml(
+                                    sale.productName
+                                )}
+                            </strong>
+
+                            <span>
+                                ${sale.quantity}
+                                unit(s)
+                                ·
+                                ${escapeHtml(
+                                    sale.paymentMethod
+                                )}
+                                ·
+                                ${formatDate(
+                                    sale.date
+                                )}
+                            </span>
+
+                        </div>
+
+                        <div class="data-side">
+
+                            <strong>
+                                +${money(sale.total)}
+                            </strong>
+
+                            <span>
+                                ${sale.customer
+                                    ? escapeHtml(
+                                        sale.customer
+                                    )
+                                    : "Walk-in customer"}
+                            </span>
+
+                        </div>
+
+                    </div>
+                `;
+            }
+        )
+        .join("");
+}
+
+
+/* =========================================
+   EXPENSES
+========================================= */
+
+document.getElementById(
+    "addExpenseButton"
+).addEventListener(
+    "click",
+    openAddExpenseModal
+);
+
+
+document.getElementById(
+    "expensesAddButton"
+).addEventListener(
+    "click",
+    openAddExpenseModal
+);
+
+
+function openAddExpenseModal() {
+
+    openModal(
+        "Add Expense",
+        `
+            <form id="expenseForm" class="modal-form">
+
+                <label>
+                    Description
+
+                    <input
+                        type="text"
+                        id="expenseDescription"
+                        placeholder="e.g. Transport"
+                        required
+                    >
+                </label>
+
+
+                <label>
+                    Amount
+
+                    <input
+                        type="number"
+                        id="expenseAmount"
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
+                        required
+                    >
+                </label>
+
+
+                <label>
+                    Category
+
+                    <select id="expenseCategory">
+
+                        <option>
+                            General
+                        </option>
+
+                        <option>
+                            Transport
+                        </option>
+
+                        <option>
+                            Rent
+                        </option>
+
+                        <option>
+                            Electricity
+                        </option>
+
+                        <option>
+                            Stock
+                        </option>
+
+                        <option>
+                            Salary
+                        </option>
+
+                        <option>
+                            Other
+                        </option>
+
+                    </select>
+
+                </label>
+
+
+                <div class="modal-actions">
+
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        onclick="closeModal()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                    >
+                        Add Expense
+                    </button>
+
+                </div>
+
+            </form>
+        `
+    );
+
+
+    document.getElementById(
+        "expenseForm"
+    ).addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+
+            businessData.expenses.push({
+
+                id:
+                    createId(),
+
+                description:
+                    document
+                        .getElementById(
+                            "expenseDescription"
+                        )
+                        .value
+                        .trim(),
+
+                amount:
+                    Number(
+                        document
+                            .getElementById(
+                                "expenseAmount"
+                            )
+                            .value
+                    ),
+
+                category:
+                    document
+                        .getElementById(
+                            "expenseCategory"
+                        )
+                        .value,
+
+                date:
+                    new Date().toISOString()
+            });
+
+
+            closeModal();
+
+            await saveEverything();
+
+            showPage("expenses");
+        }
+    );
+}
+
+
+/* =========================================
+   EXPENSE LIST
+========================================= */
+
+function renderExpenses() {
+
+    const container =
+        document.getElementById(
+            "expensesList"
+        );
+
+
+    const expenses =
+        [...businessData.expenses]
+            .sort(
+                (a, b) =>
+                    new Date(b.date) -
+                    new Date(a.date)
+            );
+
+
+    if (!expenses.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">↘</div>
+                <p>No expenses recorded yet.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        expenses.map(
+            expense => {
+
+                return `
+                    <div class="data-row">
+
+                        <div class="data-main">
+
+                            <strong>
+                                ${escapeHtml(
+                                    expense.description
+                                )}
+                            </strong>
+
+                            <span>
+                                ${escapeHtml(
+                                    expense.category
+                                )}
+                                ·
+                                ${formatDate(
+                                    expense.date
+                                )}
+                            </span>
+
+                        </div>
+
+                        <div class="data-side">
+
+                            <strong>
+                                -${money(
+                                    expense.amount
+                                )}
+                            </strong>
+
+                        </div>
+
+                    </div>
+                `;
+            }
+        )
+        .join("");
+}
+
+
+/* =========================================
+   CUSTOMERS
+========================================= */
+
+document.getElementById(
+    "customerAddButton"
+).addEventListener(
+    "click",
+    openAddCustomerModal
+);
+
+
+function openAddCustomerModal() {
+
+    openModal(
+        "Add Customer",
+        `
+            <form id="customerForm" class="modal-form">
+
+                <label>
+                    Customer Name
+
+                    <input
+                        type="text"
+                        id="customerName"
+                        placeholder="Customer name"
+                        required
+                    >
+                </label>
+
+
+                <label>
+                    Phone
+
+                    <input
+                        type="tel"
+                        id="customerPhone"
+                        placeholder="080..."
+                    >
+                </label>
+
+
+                <label>
+                    Email
+
+                    <input
+                        type="email"
+                        id="customerEmail"
+                        placeholder="Optional"
+                    >
+                </label>
+
+
+                <div class="modal-actions">
+
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        onclick="closeModal()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                    >
+                        Add Customer
+                    </button>
+
+                </div>
+
+            </form>
+        `
+    );
+
+
+    document.getElementById(
+        "customerForm"
+    ).addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+
+            businessData.customers.push({
+
+                id:
+                    createId(),
+
+                name:
+                    document
+                        .getElementById(
+                            "customerName"
+                        )
+                        .value
+                        .trim(),
+
+                phone:
+                    document
+                        .getElementById(
+                            "customerPhone"
+                        )
+                        .value
+                        .trim(),
+
+                email:
+                    document
+                        .getElementById(
+                            "customerEmail"
+                        )
+                        .value
+                        .trim(),
+
+                createdAt:
+                    new Date().toISOString()
+            });
+
+
+            closeModal();
+
+            await saveEverything();
+
+            showPage("customers");
+        }
+    );
+}
+
+
+/* =========================================
+   CUSTOMER LIST
+========================================= */
+
+function renderCustomers() {
+
+    const container =
+        document.getElementById(
+            "customersList"
+        );
+
+
+    if (!businessData.customers.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">♙</div>
+                <p>No customers added yet.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        businessData.customers.map(
+            customer => {
+
+                const purchases =
+                    businessData.sales.filter(
+                        sale =>
+                            sale.customer
+                                ?.toLowerCase() ===
+                            customer.name
+                                .toLowerCase()
+                    );
+
+
+                const totalSpent =
+                    purchases.reduce(
+                        (total, sale) =>
+                            total +
+                            Number(
+                                sale.total || 0
+                            ),
+                        0
+                    );
+
+
+                return `
+                    <div class="data-row">
+
+                        <div class="data-main">
+
+                            <strong>
+                                ${escapeHtml(
+                                    customer.name
+                                )}
+                            </strong>
+
+                            <span>
+                                ${
+                                    escapeHtml(
+                                        customer.phone ||
+                                        customer.email ||
+                                        "No contact information"
+                                    )
+                                }
+                            </span>
+
+                        </div>
+
+                        <div class="data-side">
+
+                            <strong>
+                                ${money(totalSpent)}
+                            </strong>
+
+                            <span>
+                                ${purchases.length}
+                                purchase(s)
+                            </span>
+
+                        </div>
+
+                    </div>
+                `;
+            }
+        )
+        .join("");
+}
+
+
+/* =========================================
+   RECEIPTS
+========================================= */
+
+function renderReceipts() {
+
+    const container =
+        document.getElementById(
+            "receiptsList"
+        );
+
+
+    const receipts =
+        [...businessData.receipts]
+            .sort(
+                (a, b) =>
+                    new Date(b.date) -
+                    new Date(a.date)
+            );
+
+
+    if (!receipts.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">▤</div>
+                <p>No receipts available yet.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        receipts.map(
+            receipt => {
+
+                return `
+                    <div class="data-row">
+
+                        <div class="data-main">
+
+                            <strong>
+                                ${escapeHtml(
+                                    receipt.productName
+                                )}
+                            </strong>
+
+                            <span>
+                                Receipt
+                                ·
+                                ${formatDate(
+                                    receipt.date
+                                )}
+                                ·
+                                ${receipt.paymentMethod}
+                            </span>
+
+                        </div>
+
+                        <div class="data-side">
+
+                            <strong>
+                                ${money(
+                                    receipt.total
+                                )}
+                            </strong>
+
+                            <button
+                                class="secondary-button"
+                                onclick="viewReceipt('${receipt.id}')"
+                            >
+                                View
+                            </button>
+
+                        </div>
+
+                    </div>
+                `;
+            }
+        )
+        .join("");
+}
+
+
+/* =========================================
+   VIEW RECEIPT
+========================================= */
+
+window.viewReceipt =
+    function (receiptId) {
+
+        const receipt =
+            businessData.receipts.find(
+                item =>
+                    item.id === receiptId
+            );
+
+
+        if (!receipt) return;
+
+
+        openModal(
+            "Receipt",
+            `
+                <div class="receipt">
+
+                    <div class="receipt-header">
+
+                        <h2>
+                            ${escapeHtml(
+                                businessData.business.name
+                            )}
+                        </h2>
+
+                        <p>
+                            Receipt
+                        </p>
+
+                        <p>
+                            ${formatDate(
+                                receipt.date
+                            )}
+                        </p>
+
+                    </div>
+
+
+                    <div class="receipt-items">
+
+                        <div class="receipt-item">
+
+                            <span>
+                                ${escapeHtml(
+                                    receipt.productName
+                                )}
+                                ×
+                                ${receipt.quantity}
+                            </span>
+
+                            <strong>
+                                ${money(
+                                    receipt.total
+                                )}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="receipt-total">
+
+                        <span>
+                            Total
+                        </span>
+
+                        <span>
+                            ${money(
+                                receipt.total
+                            )}
+                        </span>
+
+                    </div>
+
+
+                    <div style="
+                        margin-top:18px;
+                        color:#718096;
+                        font-size:12px;
+                    ">
+
+                        Payment:
+                        ${escapeHtml(
+                            receipt.paymentMethod
+                        )}
+
+                        ${
+                            receipt.customer
+                                ? `<br>Customer:
+                                    ${escapeHtml(
+                                        receipt.customer
+                                    )}`
+                                : ""
+                        }
+
+                    </div>
+
+
+                    <button
+                        class="primary-button"
+                        style="width:100%;margin-top:20px;"
+                        onclick="printReceipt('${receipt.id}')"
+                    >
+                        Print Receipt
+                    </button>
+
+                </div>
+            `
+        );
+    };
+
+
+/* =========================================
+   PRINT RECEIPT
+========================================= */
+
+window.printReceipt =
+    function (receiptId) {
+
+        const receipt =
+            businessData.receipts.find(
+                item =>
+                    item.id === receiptId
+            );
+
+
+        if (!receipt) return;
+
+
+        const printArea =
+            document.getElementById(
+                "printReceipt"
+            );
+
+
+        printArea.innerHTML = `
+
+            <div style="
+                max-width:500px;
+                margin:0 auto;
+                padding:30px;
+                font-family:Arial,sans-serif;
+            ">
+
+                <div style="
+                    text-align:center;
+                    border-bottom:1px dashed #999;
+                    padding-bottom:15px;
+                ">
+
+                    <h2>
+                        ${escapeHtml(
+                            businessData.business.name
+                        )}
+                    </h2>
+
+                    <p>
+                        Receipt
+                    </p>
+
+                    <p>
+                        ${formatDate(
+                            receipt.date
+                        )}
+                    </p>
+
+                </div>
+
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    padding:15px 0;
+                    border-bottom:1px solid #ddd;
+                ">
+
+                    <span>
+                        ${escapeHtml(
+                            receipt.productName
+                        )}
+                        ×
+                        ${receipt.quantity}
+                    </span>
+
+                    <strong>
+                        ${money(
+                            receipt.total
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    padding-top:20px;
+                    font-size:18px;
+                    font-weight:bold;
+                ">
+
+                    <span>
+                        TOTAL
+                    </span>
+
+                    <span>
+                        ${money(
+                            receipt.total
+                        )}
+                    </span>
+
+                </div>
+
+
+                <p style="
+                    margin-top:20px;
+                    font-size:12px;
+                    color:#555;
+                ">
+                    Payment:
+                    ${escapeHtml(
+                        receipt.paymentMethod
+                    )}
+                </p>
+
+            </div>
+        `;
+
+
+        window.print();
+    };
+
+
+/* =========================================
+   SETTINGS
+========================================= */
+
+document.getElementById(
+    "saveSettingsButton"
+).addEventListener(
+    "click",
+    async function () {
+
+        businessData.business.name =
+            document
+                .getElementById(
+                    "businessNameInput"
+                )
+                .value
+                .trim() ||
+            "My Business";
+
+
+        businessData.business.currency =
+            document
+                .getElementById(
+                    "currencyInput"
+                )
+                .value
+                .trim() ||
+            "₦";
+
+
+        await saveEverything();
+
+
+        alert(
+            "Business settings saved."
+        );
+    }
+);
+
+
+/* =========================================
+   CLEAR LOCAL DATA
+========================================= */
+
+document.getElementById(
+    "clearDataButton"
+).addEventListener(
+    "click",
+    function () {
+
+        const confirmed =
+            confirm(
+                "Clear local data from this browser? Your cloud data will not be deleted."
+            );
+
+
+        if (!confirmed) return;
+
+
+        localStorage.removeItem(
+            LOCAL_KEY
+        );
+
+
+        alert(
+            "Local data cleared."
+        );
+
+        location.reload();
+    }
+);
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+document.getElementById(
+    "logoutButton"
+).addEventListener(
+    "click",
+    async function () {
+
+        try {
+
+            await signOut(auth);
+
+        } catch (error) {
+
+            console.error(error);
 
             alert(
-                "Local data cleared. Cloud data remains safe."
+                "Could not sign out."
             );
-
-
-            location.reload();
         }
-    );
-}
+    }
+);
 
 
-// ============================================================
-// PROFILE BUTTON
-// ============================================================
-
-if (profileButton) {
-
-    profileButton.addEventListener(
-        "click",
-        function () {
-
-            showPage("settings");
-        }
-    );
-}
-
-
-// ============================================================
-// UPDATE PROFILE INFORMATION
-// ============================================================
+/* =========================================
+   PROFILE
+========================================= */
 
 function updateProfileInformation() {
 
-    const profileName =
-        document.getElementById("profileName");
-
-    const profileEmail =
-        document.getElementById("profileEmail");
+    const user =
+        auth.currentUser;
 
 
-    if (!auth.currentUser) return;
+    if (!user) return;
 
 
-    if (profileName) {
-
-        profileName.textContent =
-            auth.currentUser.displayName ||
-            "Business Owner";
-    }
+    const name =
+        user.displayName ||
+        "User";
 
 
-    if (profileEmail) {
+    const email =
+        user.email ||
+        "";
 
-        profileEmail.textContent =
-            auth.currentUser.email || "";
-    }
+
+    document.getElementById(
+        "profileName"
+    ).textContent = name;
+
+
+    document.getElementById(
+        "profileEmail"
+    ).textContent = email;
+
+
+    document.getElementById(
+        "accountEmail"
+    ).textContent = email;
+
+
+    const firstLetter =
+        name
+            .charAt(0)
+            .toUpperCase() ||
+        "V";
+
+
+    document.getElementById(
+        "profileAvatar"
+    ).textContent =
+        firstLetter;
+
+
+    document.getElementById(
+        "topProfileAvatar"
+    ).textContent =
+        firstLetter;
+
+
+    document.getElementById(
+        "businessNameInput"
+    ).value =
+        businessData.business.name;
+
+
+    document.getElementById(
+        "currencyInput"
+    ).value =
+        businessData.business.currency;
 }
 
 
-// ============================================================
-// ESCAPE HTML
-// ============================================================
+document.getElementById(
+    "profileButton"
+).addEventListener(
+    "click",
+    function () {
 
-function escapeHTML(value) {
-
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+        showPage("settings");
+    }
+);
 
 
-// ============================================================
-// UPDATE EVERYTHING
-// ============================================================
+/* =========================================
+   UPDATE EVERYTHING
+========================================= */
 
 function updateEverything() {
 
     updateDashboard();
 
+    updateInventory();
+
     renderSales();
 
     renderExpenses();
-
-    renderInventory();
 
     renderCustomers();
 
     renderReceipts();
 
-    updateSettings();
-
     updateProfileInformation();
 }
 
 
-// ============================================================
-// START APP
-// ============================================================
+/* =========================================
+   SECURITY HELPERS
+========================================= */
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+function escapeAttribute(value) {
+
+    return escapeHtml(value);
+}
+
+
+/* =========================================
+   START
+========================================= */
 
 showPage("dashboard");
 
-console.log("vBusiness is running.");
+console.log(
+    "vBusiness is running."
+);
